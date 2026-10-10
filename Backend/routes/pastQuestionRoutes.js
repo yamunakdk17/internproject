@@ -1,14 +1,26 @@
 const express = require("express");
-
 const router = express.Router();
 
 const pastQuestionUpload = require("../middleware/pastQuestionMiddleware");
 
-const { uploadPastQuestion } = require("../controllers/pastQuestionController");
+const {
+  uploadPastQuestion,
+  getPastQuestions,
+} = require("../controllers/pastQuestionController");
 
 const protectRoute = require("../middleware/authMiddleware");
 const allowRoles = require("../middleware/roleMiddleware");
 
-router.post("/upload",protectRoute,allowRoles("admin"),pastQuestionUpload.single("file"),uploadPastQuestion,);
+// Protected: only admins can upload
+router.post(
+  "/upload",
+  protectRoute,
+  allowRoles("admin"),
+  pastQuestionUpload.single("file"),
+  uploadPastQuestion
+);
+
+// Fetch uploaded files
+router.get("/", getPastQuestions);
 
 module.exports = router;

@@ -521,6 +521,7 @@ function Quiz() {
               </h1>
 
               <div className="mt-7 space-y-3">
+
                 {question.options.map((option, index) => {
                   const selected = answers[question.id] === index;
 
@@ -530,22 +531,21 @@ function Quiz() {
                       key={index}
                       disabled={submitted}
                       onClick={() => chooseAnswer(index)}
-                      className={`flex w - full items - start gap - 4 rounded - xl border p - 4 text - left transition ${
-          selected
-            ? "border-[#0874BD] bg-blue-50 ring-1 ring-[#0874BD]"
-            : "border-slate-200 hover:border-blue-300 hover:bg-slate-50"
-        } `}
+                      className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition ${selected
+                          ? "border-[#0874BD] bg-blue-50 ring-1 ring-[#0874BD]"
+                          : "border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50"
+                        }`}
                     >
                       <span
-                        className={`flex h - 8 w - 8 shrink - 0 items - center justify - center rounded - lg text - sm font - bold ${
-          selected
-            ? "bg-[#0874BD] text-white"
-            : "bg-slate-100 text-slate-700"
-        } `}
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-sm font-bold ${selected
+                            ? "border-[#0874BD] bg-[#0874BD] text-white"
+                            : "border-slate-300 bg-white text-slate-700"
+                          }`}
                       >
                         {LETTERS[index]}
                       </span>
-                      <span className="pt-1 text-sm leading-relaxed text-slate-800 md:text-base">
+
+                      <span className="text-sm leading-relaxed text-slate-800 md:text-base">
                         {option}
                       </span>
                     </button>

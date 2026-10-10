@@ -14,11 +14,12 @@ const uploadPastQuestion = async (req, res) => {
       filePath: req.file.path,
       fileType: req.file.mimetype,
     });
+    pastQuestionModel.getPastQuestionFiles();
 
     return response.success(
       res,
       "Past question uploaded successfully.",
-      result,
+      result
     );
   } catch (error) {
     console.error("PAST QUESTION UPLOAD ERROR:", error);
@@ -26,11 +27,33 @@ const uploadPastQuestion = async (req, res) => {
     return response.error(
       res,
       error.message || "Failed to upload past question.",
-      error.statusCode || 500,
+      error.statusCode || 500
+    );
+  }
+};
+
+// Fetch uploaded past-question files
+const getPastQuestions = async (req, res) => {
+  try {
+    const files = await pastQuestionService.getPastQuestions();
+
+    return response.success(
+      res,
+      "Past questions fetched successfully.",
+      files
+    );
+  } catch (error) {
+    console.error("GET PAST QUESTIONS ERROR:", error);
+
+    return response.error(
+      res,
+      error.message || "Failed to fetch past questions.",
+      error.statusCode || 500
     );
   }
 };
 
 module.exports = {
   uploadPastQuestion,
+  getPastQuestions,
 };

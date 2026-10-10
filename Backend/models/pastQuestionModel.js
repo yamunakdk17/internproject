@@ -1,49 +1,51 @@
 const db = require("../config/db");
 
-// Create a past exam question
-const createPastQuestion = async (questionData) => {
-  const {
-    subject,
-    difficulty,
-    question_text,
-    option_a,
-    option_b,
-    option_c,
-    option_d,
-    correct_answer,
-    explanation,
-  } = questionData;
-
+// Save uploaded past-question file information
+const createPastQuestionFile = async (data) => {
   const sql = `
     INSERT INTO past_questions (
-      subject,
-      difficulty,
-      question_text,
-      option_a,
-      option_b,
-      option_c,
-      option_d,
-      correct_answer,
-      explanation
+      file_name,
+      original_name,
+      file_path,
+      file_type
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?)
   `;
 
   const [result] = await db.execute(sql, [
-    subject,
-    difficulty,
-    question_text.trim(),
-    option_a,
-    option_b,
-    option_c,
-    option_d,
-    correct_answer,
-    explanation || "",
+    data.fileName,
+    data.originalName,
+    data.filePath,
+    data.fileType,
   ]);
 
-  return result;
+  return {
+    id: result.insertId,
+    ...data,
+  };
+};
+
+// Get all uploaded past-question files
+const getPastQuestionFiles = async () => {
+  const sql = `
+    SELECT
+      id,
+      file_name,
+      original_name,
+      file_path,
+      file_type,
+      created_at
+    FROM past_questions
+    WHERE file_name IS NOT NULL
+    ORDER BY created_at DESC
+  `;
+
+  const [rows] = await db.execute(sql);
+  return rows;
 };
 
 module.exports = {
-  createPastQuestion,
+  createPastQuestionFile,
+  getPastQuestionFiles,
 };
+

@@ -1,10 +1,17 @@
+
 const pastQuestionModel = require("../models/pastQuestionModel");
 
-// Upload past-question file
+// Upload PDF or DOCX file information
 const uploadPastQuestion = async (data) => {
-  return await pastQuestionModel.createPastQuestion(data);
+  return await pastQuestionModel.createPastQuestionFile(data);
+};
+
+// Fetch uploaded PDF or DOCX files
+const getPastQuestions = async () => {
+  return await pastQuestionModel.getPastQuestionFiles();
 };
 
 module.exports = {
   uploadPastQuestion,
+  getPastQuestions,
 };
