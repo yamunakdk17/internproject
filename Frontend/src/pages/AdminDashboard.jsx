@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import api from "../api/axios"; 
 import AdminTabs from "../components/admin/AdminTabs";
 import PastQuestionSection from "../components/admin/PastQuestionSection";
 import QuestionSection from "../components/admin/questionSection"; 
@@ -15,6 +16,58 @@ const modules = [
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("past");
   const [toast, setToast] = useState("");
+
+  const [stats, setStats] = useState({
+    pastPapers: null,
+    questions: null,
+    openNotices: null,
+  });
+
+  useEffect(() => {
+    const getRecords = (response) => {
+      const result = response?.data;
+
+      if (Array.isArray(result)) return result;
+      if (Array.isArray(result?.data)) return result.data;
+      if (Array.isArray(result?.data?.records)) return result.data.records;
+      if (Array.isArray(result?.data?.questions)) return result.data.questions;
+      if (Array.isArray(result?.data?.notices)) return result.data.notices;
+      if (Array.isArray(result?.data?.papers)) return result.data.papers;
+
+      return [];
+    };
+
+    const loadStats = async () => {
+      const [papersResult, questionsResult, noticesResult] =
+        await Promise.allSettled([
+          api.get("/admin/past-questions"),
+          api.get("/questions/get"),
+          api.get("/notices"),
+        ]);
+
+      setStats({
+        pastPapers:
+          papersResult.status === "fulfilled"
+            ? getRecords(papersResult.value).length
+            : null,
+
+        questions:
+          questionsResult.status === "fulfilled"
+            ? getRecords(questionsResult.value).length
+            : null,
+
+        openNotices:
+          noticesResult.status === "fulfilled"
+            ? getRecords(noticesResult.value).filter(
+              (notice) =>
+                String(notice.status || "").toLowerCase() === "open"
+            ).length
+            : null,
+      });
+    };
+
+    loadStats();
+  }, []);
 
   const showToast = (message) => {
     setToast(message);
@@ -39,8 +92,40 @@ function AdminDashboard() {
           <div className="mt-2 flex flex-col justify-between gap-3 lg:flex-row lg:items-end"><div><h1 className="text-3xl font-black tracking-tight text-[#182235]">Good morning, admin.</h1><p className="mt-2 text-sm text-slate-500">Manage the content students see. Each workspace keeps one task in focus.</p></div><div className="text-xs font-bold text-slate-400">Content status <span className="ml-1 text-[#187A46]">● All systems ready</span></div></div>
         </div>
 
+
         <div className="grid gap-4 sm:grid-cols-3">
-          {[["4","Content modules","Past · Quiz · Bank · Notices"],["128","Question records","Across all active sectors"],["06","Open notices","Visible to students"]].map(([n,l,d])=><div key={l} className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-3xl font-black text-[#182235]">{n}</p><p className="mt-1 text-sm font-extrabold">{l}</p><p className="mt-1 text-xs text-slate-400">{d}</p></div>)}
+          {[
+            [
+              stats.pastPapers,
+              "Past question papers",
+              "Uploaded papers available in the library",
+            ],
+            [
+              stats.questions,
+              "Question records",
+              "Questions returned by the backend",
+            ],
+            [
+              stats.openNotices,
+              "Open notices",
+              "Notices with Open status",
+            ],
+          ].map(([count, label, description]) => (
+            <div
+              key={label}
+              className="rounded-2xl border border-slate-200 bg-white p-5"
+            >
+              <p className="text-3xl font-black text-[#182235]">
+                {count === null ? "—" : count}
+              </p>
+
+              <p className="mt-1 text-sm font-extrabold">{label}</p>
+
+              <p className="mt-1 text-xs text-slate-400">
+                {description}
+              </p>
+            </div>
+          ))}
         </div>
 
         <div className="mt-7 grid gap-6 lg:grid-cols-[235px_1fr]">

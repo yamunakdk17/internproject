@@ -1,8 +1,11 @@
+
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+const API_SERVER_URL = API_BASE_URL.replace(/\/api\/?$/, "");
 
 const sectors = [
   ["Administration", "प्रशासन"],
@@ -28,6 +31,57 @@ function getRecords(response) {
   return [];
 }
 
+function getVacancyUrl(notice) {
+  const filePath =
+    notice.notice_pdf ||
+    notice.pdf_path ||
+    notice.file_path;
+
+  const value = filePath || notice.source_url;
+
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+
+  const url = value.trim();
+
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+
+  // Reject unsupported URL schemes.
+  if (/^[a-z][a-z\d+.-]*:/i.test(url)) {
+    return null;
+  }
+
+  // Resolve a relative file path against the backend server.
+  return `${API_SERVER_URL}/${url.replace(/^\/+/, "")}`;
+}
+
+function getDueLabel(notice, now) {
+  const status = String(notice.status || "").trim().toLowerCase();
+  if (status === "closed") return "Closed";
+  if (!notice.deadline) return "No deadline";
+  if (status !== "open" && status !== "extended") {
+    return `Due ${String(notice.deadline).slice(0, 10)}`;
+  }
+
+  const match = String(notice.deadline).slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return "No deadline";
+  const [, year, month, day] = match.map(Number);
+  const deadline = Date.UTC(year, month - 1, day);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kathmandu", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(now);
+  const todayParts = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  const today = Date.UTC(Number(todayParts.year), Number(todayParts.month) - 1, Number(todayParts.day));
+  const daysLeft = Math.round((deadline - today) / 86400000);
+
+  if (daysLeft < 0) return "Deadline passed";
+  if (daysLeft === 0) return "Due today";
+  return `${daysLeft} ${daysLeft === 1 ? "day" : "days"} left`;
+}
+
 function Arrow() {
   return <span aria-hidden="true">→</span>;
 }
@@ -39,12 +93,20 @@ function Home() {
   const [loadingQuestions, setLoadingQuestions] = useState(true);
   const [noticeError, setNoticeError] = useState("");
   const [questionError, setQuestionError] = useState("");
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
 
     async function loadNotices() {
       try {
+        setNoticeError("");
+
         const response = await fetch(`${API_BASE_URL}/notices`, {
           signal: controller.signal,
         });
@@ -54,9 +116,14 @@ function Home() {
         }
 
         const result = await response.json();
-        setNotices(getRecords(result));
+        const records = getRecords(result);
+
+        console.log("HOME NOTICE RECORDS:", records);
+
+        setNotices(records);
       } catch (error) {
         if (error.name !== "AbortError") {
+          console.error("Failed to load notices:", error);
           setNoticeError(error.message || "Unable to load notices.");
         }
       } finally {
@@ -68,6 +135,8 @@ function Home() {
 
     async function loadQuestions() {
       try {
+        setQuestionError("");
+
         const response = await fetch(`${API_BASE_URL}/questions/get`, {
           signal: controller.signal,
         });
@@ -80,6 +149,7 @@ function Home() {
         setQuestions(getRecords(result));
       } catch (error) {
         if (error.name !== "AbortError") {
+          console.error("Failed to load questions:", error);
           setQuestionError(error.message || "Unable to load questions.");
         }
       } finally {
@@ -101,9 +171,7 @@ function Home() {
     return questions.filter((question) => {
       const category = String(
         question.category || question.sector || ""
-      )
-        .trim()
-        .toLowerCase();
+      ).trim().toLowerCase();
 
       const subject = String(question.subject || "")
         .trim()
@@ -178,7 +246,7 @@ function Home() {
             </div>
           </div>
 
-          {/* SAMPLE QUIZ PREVIEW */}
+          {/* QUIZ PREVIEW */}
           <div className="relative flex items-end justify-center lg:justify-end">
             <div className="w-full max-w-[480px] rounded-[28px] border border-[#CFE3EF] bg-[#F4FAFD] p-4 shadow-[0_24px_60px_rgba(24,34,53,.09)]">
               <div className="rounded-[22px] bg-[#0874BD] p-6 text-white">
@@ -355,7 +423,7 @@ function Home() {
           </div>
 
           <p className="mt-4 text-sm leading-6 text-slate-500">
-            Filter sample papers by subject, province and exam date instead of
+            Filter papers by subject, province and exam date instead of
             scrolling through a long list.
           </p>
 
@@ -394,8 +462,8 @@ function Home() {
             ) : noticeError ? (
               <div className="p-5">
                 <p className="text-sm text-slate-500">
-                  Unable to load notices. Please check that the backend is
-                  running and the API URL is correct.
+                  Unable to load notices. Check that the backend is running
+                  and the API URL is correct.
                 </p>
 
                 <button
@@ -412,8 +480,13 @@ function Home() {
               </p>
             ) : (
               notices.map((notice, index) => {
-                const status = String(notice.status || "Published");
+                const originalStatus = String(notice.status || "Published");
+                const dueLabel = getDueLabel(notice, now);
+                const expired = dueLabel === "Deadline passed" &&
+                  ["open", "extended"].includes(originalStatus.trim().toLowerCase());
+                const status = expired ? "Closed" : originalStatus;
                 const isOpen = status.toLowerCase() === "open";
+                const vacancyUrl = getVacancyUrl(notice);
 
                 return (
                   <div
@@ -434,20 +507,42 @@ function Home() {
                       </p>
                     </div>
 
-                    <span className="text-xs font-bold text-slate-500">
-                      {notice.deadline
-                        ? `Due ${String(notice.deadline).slice(0, 10)}`
-                        : "No deadline"}
+                    <span className={`text-xs font-bold ${expired ? "text-red-700" : "text-slate-500"}`}>
+                      {dueLabel}
                     </span>
 
-                    <span
-                      className={`w-fit rounded-full px-2.5 py-1 text-[11px] font-black ${isOpen
-                          ? "bg-[#EAF7EF] text-[#187A46]"
-                          : "bg-[#FFF5DC] text-[#A56A00]"
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`w-fit rounded-full px-2.5 py-1 text-[11px] font-black ${
+                          isOpen
+                            ? "bg-[#EAF7EF] text-[#187A46]"
+                            : status.toLowerCase() === "closed"
+                              ? "bg-slate-100 text-slate-600"
+                              : "bg-[#FFF5DC] text-[#A56A00]"
                         }`}
-                    >
-                      {status}
-                    </span>
+                      >
+                        {status}
+                      </span>
+
+                      {vacancyUrl ? (
+                        <a
+                          href={vacancyUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center rounded-lg bg-[#0874BD] px-3 py-2 text-xs font-extrabold text-white hover:bg-[#07538E]"
+                        >
+                          <span className="text-white">Open Vacancy</span>
+                           
+                        </a>
+                      ) : (
+                        <span
+                          title="The backend did not return a vacancy PDF path or official URL."
+                          className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500"
+                        >
+                          Link unavailable
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               })

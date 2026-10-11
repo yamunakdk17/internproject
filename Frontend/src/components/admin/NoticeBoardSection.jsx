@@ -1,11 +1,24 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import {initialNoticeForm,noticeTypes,} from "../../constants/adminConstants";
-import {createNotice } from "../../services/noticeService";
+import {createNotice, getAllNotices, updateNotice } from "../../services/noticeService";
 
 function NoticeBoardSection({ showToast }) {
     const [form, setForm] = useState(initialNoticeForm);
     const [file, setFile] = useState(null);
+    const [notices, setNotices] = useState([]);
+    const [editingId, setEditingId] = useState(null);
+
+    const refreshNotices = async () => {
+        try {
+            const result = await getAllNotices();
+            setNotices(result?.data?.data || result?.data || []);
+        } catch (error) {
+            console.error("Could not load notices for editing:", error);
+        }
+    };
+
+    useEffect(() => { refreshNotices(); }, []);
 
     const inputClass =
         "w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
@@ -39,7 +52,7 @@ function NoticeBoardSection({ showToast }) {
     const handleSubmit = async (event) => {
         event.preventDefault();
 
-        if (!file) {
+        if (!file && !editingId) {
             showToast("Please select a notice PDF.");
             return;
         }
@@ -57,24 +70,28 @@ function NoticeBoardSection({ showToast }) {
             formData.append("status", form.status);
 
             // Important: backend expects notice_pdf
-            formData.append("notice_pdf", file);
+            if (file) formData.append("notice_pdf", file);
 
             // For now, if your backend requires JWT,
             // replace this with your actual token.
             const token = localStorage.getItem("token");
 
-            const result = await createNotice(formData, token);
+            const result = editingId
+                ? await updateNotice(editingId, formData, token)
+                : await createNotice(formData, token);
 
             console.log("Notice uploaded:", result);
 
-            showToast("Notice uploaded successfully.");
+            showToast(editingId ? "Notice updated successfully." : "Notice uploaded successfully.");
 
             // Reset form
             setForm(initialNoticeForm);
             setFile(null);
+            setEditingId(null);
 
             // Reset file input
             event.target.reset();
+            await refreshNotices();
 
         } catch (error) {
             console.error("Notice upload error:", error);
@@ -88,7 +105,7 @@ function NoticeBoardSection({ showToast }) {
 
             <div className="mb-6">
                 <h2 className="text-xl font-bold text-slate-900">
-                    Add Notice
+                    {editingId ? "Edit Notice" : "Add Notice"}
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-500">
@@ -259,7 +276,7 @@ function NoticeBoardSection({ showToast }) {
                         >
                             <option value="Open">Open</option>
                             <option value="Closed">Closed</option>
-                            <option value="Upcoming">Upcoming</option>
+                            <option value="Extended">Extended</option>
                         </select>
                     </Field>
 
@@ -285,7 +302,7 @@ function NoticeBoardSection({ showToast }) {
                         type="file"
                         accept=".pdf,application/pdf"
                         onChange={handleFile}
-                        required
+                        required={!editingId}
                         className="mx-auto block w-full max-w-md rounded-lg border border-slate-300 bg-white text-sm"
                     />
 
@@ -303,10 +320,21 @@ function NoticeBoardSection({ showToast }) {
                     type="submit"
                     className="rounded-lg bg-slate-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-700"
                 >
-                    Upload Notice
+                    {editingId ? "Save Notice Changes" : "Upload Notice"}
                 </button>
+                {editingId && <button type="button" onClick={() => { setEditingId(null); setForm(initialNoticeForm); setFile(null); }} className="ml-3 rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700">Cancel</button>}
 
             </form>
+            <div className="mt-8 border-t border-slate-200 pt-5">
+                <h3 className="mb-3 font-bold text-slate-900">Existing notices</h3>
+                <div className="space-y-2">
+                    {notices.map((notice) => <div key={notice.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-3">
+                        <div><p className="font-semibold text-slate-800">{notice.title}</p><p className="text-xs text-slate-500">Published: {notice.published_date || "—"} · Deadline: {notice.deadline || "—"}</p></div>
+                        <button type="button" onClick={() => { setEditingId(notice.id); setForm({ title: notice.title || "", description: notice.description || "", sector: notice.sector || "Administration", notice_type: notice.notice_type || "Vacancy", organization: notice.organization || "", published_date: String(notice.published_date || "").slice(0, 10), deadline: String(notice.deadline || "").slice(0, 10), status: notice.status || "Open" }); setFile(null); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Edit</button>
+                    </div>)}
+                    {!notices.length && <p className="text-sm text-slate-500">No notices are available.</p>}
+                </div>
+            </div>
         </div>
     );
 }

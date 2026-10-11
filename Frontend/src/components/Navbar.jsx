@@ -57,8 +57,12 @@ function Navbar() {
           {!user ? (
             <>
               <Link to="/login" className="hidden rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 sm:block">Log in</Link>
-              <Link to="/register" className="rounded-xl bg-[#0874BD] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#07538E]">Get started</Link>
-            </>
+              <Link
+                to="/register"
+                className="rounded-xl bg-[#e1e8ed] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#0b66ab] active:shadow-none"
+              >
+                Get started
+              </Link>            </>
           ) : user.role === "admin" ? (
             <>
               <Link to="/admin" className="rounded-xl bg-[#0874BD] px-4 py-2.5 text-sm font-bold text-white">Admin</Link>

@@ -71,9 +71,9 @@ export const initialNoticeForm = {
   title: "",
   description: "",
   sector: "Administration",
-  noticeType: "Vacancy",
+  notice_type: "Vacancy",
   organization: "",
-  publishedDate: "",
+  published_date: "",
   deadline: "",
   status: "Open",
 };

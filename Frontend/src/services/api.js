@@ -6,7 +6,7 @@ const response = await fetch(`${API_BASE_URL}${endpoint}`, {
 headers: {
 ...(options.body instanceof FormData
 ? {}
-: { "Content-Type": "application/json" }),
+: { "Content-Type":"application/json" }),
 ...options.headers,
 },
 });
