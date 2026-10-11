@@ -1,6 +1,29 @@
 const noticeModel = require("../models/noticeModel");
 const createError = require("../utils/error");
 
+const ALLOWED_SECTORS = [
+  "Administration",
+  "Education",
+  "Health",
+  "IT",
+  "Finance",
+];
+
+const ALLOWED_STATUSES = ["Open", "Closed", "Extended"];
+
+// Keep HTML date input values as MySQL DATE strings; never parse them as JS dates.
+const normalizeDate = (value, field) => {
+  if (!value) return null;
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) throw createError(`${field} must be a valid YYYY-MM-DD date`, 400);
+  const [, year, month, day] = match;
+  const check = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  if (check.toISOString().slice(0, 10) !== value) {
+    throw createError(`${field} must be a valid YYYY-MM-DD date`, 400);
+  }
+  return value;
+};
+
 // CREATE NOTICE
 const createNotice = async (noticeData) => {
   if (!noticeData.title) {
@@ -15,16 +38,27 @@ const createNotice = async (noticeData) => {
     throw createError("Notice sector is required", 400);
   }
 
+  if (!ALLOWED_SECTORS.includes(noticeData.sector)) {
+    throw createError("Invalid notice sector", 400);
+  }
+
+  const status = noticeData.status || "Open";
+
+  if (!ALLOWED_STATUSES.includes(status)) {
+    throw createError("Invalid notice status", 400);
+  }
+
   const data = {
     title: noticeData.title,
     description: noticeData.description,
     sector: noticeData.sector,
-    notice_type: noticeData.notice_type,
-    organization: noticeData.organization,
-    published_date: noticeData.published_date || null,
-    deadline: noticeData.deadline || null ,
-    status: noticeData.status,
-    notice_pdf: noticeData.notice_pdf,
+    notice_type: noticeData.notice_type || null,
+    organization: noticeData.organization || null,
+    published_date: normalizeDate(noticeData.published_date, "Published date"),
+    deadline: normalizeDate(noticeData.deadline, "Deadline"),
+    status,
+    notice_pdf: noticeData.notice_pdf || null,
+    source_url: noticeData.source_url || null,
   };
 
   return await noticeModel.createNotice(data);
@@ -39,6 +73,10 @@ const getAllNotices = async () => {
 const getNoticesBySector = async (sector) => {
   if (!sector) {
     throw createError("Sector is required", 400);
+  }
+
+  if (!ALLOWED_SECTORS.includes(sector)) {
+    throw createError("Invalid notice sector", 400);
   }
 
   return await noticeModel.getNoticesBySector(sector);
@@ -77,16 +115,27 @@ const updateNotice = async (id, noticeData) => {
     throw createError("Notice sector is required", 400);
   }
 
+  if (!ALLOWED_SECTORS.includes(noticeData.sector)) {
+    throw createError("Invalid notice sector", 400);
+  }
+
+  const status = noticeData.status || "Open";
+
+  if (!ALLOWED_STATUSES.includes(status)) {
+    throw createError("Invalid notice status", 400);
+  }
+
   const data = {
     title: noticeData.title,
     description: noticeData.description,
     sector: noticeData.sector,
-    notice_type: noticeData.notice_type,
-    organization: noticeData.organization,
-    published_date: noticeData.published_date,
-    deadline: noticeData.deadline,
-    status: noticeData.status,
-    notice_pdf: noticeData.notice_pdf,
+    notice_type: noticeData.notice_type || null,
+    organization: noticeData.organization || null,
+    published_date: normalizeDate(noticeData.published_date, "Published date"),
+    deadline: normalizeDate(noticeData.deadline, "Deadline"),
+    status,
+    notice_pdf: noticeData.notice_pdf || null,
+    source_url: noticeData.source_url || null,
   };
 
   const result = await noticeModel.updateNotice(id, data);
@@ -118,7 +167,6 @@ module.exports = {
   getAllNotices,
   getNoticesBySector,
   getNoticeById,
-
   updateNotice,
   deleteNotice,
 };

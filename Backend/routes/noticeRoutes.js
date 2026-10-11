@@ -1,5 +1,4 @@
 const express = require("express");
-
 const router = express.Router();
 
 const {
@@ -12,23 +11,17 @@ const {
 } = require("../controllers/noticeController");
 
 const upload = require("../middleware/uploadNoticeMiddleware");
+const protect = require("../middleware/authMiddleware");
+const requireAdmin = require("../middleware/requireAdmin");
 
-// Get all notices
+// Public read access
 router.get("/", getAllNotices);
-
-// Get notices by sector
 router.get("/sector/:sector", getNoticesBySector);
-
-// Get single notice
 router.get("/:id", getNoticeById);
 
-// Create notice with PDF
-router.post("/create", upload, createNotice);
-
-// Update notice with PDF
-router.put("/:id", upload, updateNotice);
-
-// Delete notice
-router.delete("/:id", deleteNotice);
+// Admin-only write access
+router.post("/create", protect, requireAdmin, upload, createNotice);
+router.put("/:id", protect, requireAdmin, upload, updateNotice);
+router.delete("/:id", protect, requireAdmin, deleteNotice);
 
 module.exports = router;

@@ -54,8 +54,8 @@ const getAllNotices = async () => {
       sector,
       notice_type,
       organization,
-      published_date,
-      deadline,
+      DATE_FORMAT(published_date, '%Y-%m-%d') AS published_date,
+      DATE_FORMAT(deadline, '%Y-%m-%d') AS deadline,
       status,
       notice_pdf,
       created_at
@@ -78,8 +78,8 @@ const getNoticesBySector = async (sector) => {
       sector,
       notice_type,
       organization,
-      published_date,
-      deadline,
+      DATE_FORMAT(published_date, '%Y-%m-%d') AS published_date,
+      DATE_FORMAT(deadline, '%Y-%m-%d') AS deadline,
       status,
       notice_pdf,
       created_at
@@ -103,8 +103,8 @@ const getNoticeById = async (id) => {
       sector,
       notice_type,
       organization,
-      published_date,
-      deadline,
+      DATE_FORMAT(published_date, '%Y-%m-%d') AS published_date,
+      DATE_FORMAT(deadline, '%Y-%m-%d') AS deadline,
       status,
       notice_pdf,
       created_at
