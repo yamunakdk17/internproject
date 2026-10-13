@@ -19,8 +19,28 @@ const findUserByEmail = (email) => {
         return rows[0];
     });
 };
+const getAllUsers = () => {
+  return db
+    .query(
+      `
+        SELECT id,name,email,role
+        FROM users
+        ORDER BY id DESC`,
+    )
+    .then(([rows]) => rows);
+};
+const upadteUserRole =(userId,role) =>{
+    return db.query(
+        `UPDATE users
+        SET role = ?
+        WGERE id = ?`
+        [role, userId]
+    );
+};
 
 module.exports = {
-    createUser,
-    findUserByEmail
+  createUser,
+  findUserByEmail,
+  getAllUsers,
+  upadteUserRole,
 };

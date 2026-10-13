@@ -9,6 +9,8 @@ const questionRoutes = require("./routes/questionRoutes");
 const pastQuestionRoutes = require("./routes/pastQuestionRoutes");
 const noticeRoutes = require("./routes/noticeRoutes");
 const quizAttemptRoutes = require("./routes/quizAttemptRoutes");
+const userRoutes =require("./routes/userRoutes");
+const rateLimit =require("./middleware/ratelimit");
 
 const app = express();
 
@@ -37,12 +39,19 @@ app.get("/", (req, res) => {
     message: "Loksewa Quiz API is running",
   });
 });
+const apilimiter =rateLimit({
+  windowMs : 15* 60 *1000,//15 minutes
+  limit:200,
+  message:"Too many requests. Please try again later."
+})
 
 // API routes
+app.use("/api",apilimiter);
 app.use("/api/auth",authRoutes);
 app.use("/api/questions",questionRoutes);
 app.use("/api/admin/past-questions",pastQuestionRoutes);
 app.use("/api/notices", noticeRoutes);
 app.use("/api/quiz-attempts",quizAttemptRoutes);
+app.use("/api/admin/users", userRoutes);
 
 module.exports = app;
