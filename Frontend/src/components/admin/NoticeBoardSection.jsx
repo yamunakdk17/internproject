@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {initialNoticeForm,noticeTypes,} from "../../constants/adminConstants";
 import {createNotice, getAllNotices, updateNotice } from "../../services/noticeService";
 
 function NoticeBoardSection({ showToast }) {
+    const navigate = useNavigate();
     const [form, setForm] = useState(initialNoticeForm);
     const [file, setFile] = useState(null);
     const [notices, setNotices] = useState([]);
@@ -95,6 +97,16 @@ function NoticeBoardSection({ showToast }) {
 
         } catch (error) {
             console.error("Notice upload error:", error);
+
+            if (error.status === 401) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                navigate("/login", {
+                    replace: true,
+                    state: { message: "Your session expired. Please log in again." },
+                });
+                return;
+            }
 
             showToast(error.message || "Failed to upload notice.");
         }

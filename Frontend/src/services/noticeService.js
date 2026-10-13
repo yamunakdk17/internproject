@@ -1,5 +1,11 @@
 const API_URL = "http://localhost:5000/api/notices";
 
+const throwRequestError = (data, status, fallbackMessage) => {
+  const error = new Error(data.message || fallbackMessage);
+  error.status = status;
+  throw error;
+};
+
 // Get all notices
 export const getAllNotices = async () => {
   const response = await fetch(API_URL);
@@ -53,7 +59,7 @@ export const createNotice = async (noticeData, token) => {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || "Failed to create notice");
+    throwRequestError(data, response.status, "Failed to create notice");
   }
 
   return data;
@@ -72,7 +78,7 @@ export const updateNotice = async (id, noticeData, token) => {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || "Failed to update notice");
+    throwRequestError(data, response.status, "Failed to update notice");
   }
 
   return data;
@@ -90,7 +96,7 @@ export const deleteNotice = async (id, token) => {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || "Failed to delete notice");
+    throwRequestError(data, response.status, "Failed to delete notice");
   }
 
   return data;

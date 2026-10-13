@@ -73,7 +73,7 @@ const loginUser = (req, res) => {
       return bcrypt.compare(password, user.password).then((isPasswordValid) => {
         // 401 - Unauthorized
         if (!isPasswordValid) {
-          return response.error(res, "Unauthorized", 401);
+          return response.error(res, "Incorrect password.Please try again.", 401);
         }
 
         const token = jwt.sign(

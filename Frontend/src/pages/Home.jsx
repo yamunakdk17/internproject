@@ -298,10 +298,10 @@ function Home() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between text-xs font-bold text-blue-100">
+                {/* <div className="mt-4 flex items-center justify-between text-xs font-bold text-blue-100">
                   <span>4 / 15 completed</span>
                   <span>12 min left</span>
-                </div>
+                </div> */}
 
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/20">
                   <div className="h-full w-[27%] rounded-full bg-[#FFAA0A]" />

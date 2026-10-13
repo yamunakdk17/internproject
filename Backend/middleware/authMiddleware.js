@@ -2,10 +2,16 @@ const jwt = require("jsonwebtoken");
 const response = require("../utils/response");
 
 const protect = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
+  const authorization = req.headers.authorization;
+  const token = authorization?.match(/^Bearer\s+(\S+)$/i)?.[1];
 
   if (!token) {
     return response.error(res, "Unauthorized", 401);
+  }
+
+  if (!process.env.JWT_SECRET) {
+    console.error("JWT_SECRET is not configured.");
+    return response.error(res, "Authentication is not configured", 500);
   }
 
   try {
@@ -13,13 +19,16 @@ const protect = (req, res, next) => {
 
     req.user = decoded;
 
-    console.log("USER FROM TOKEN:", req.user);
-
     return next();
   } catch (error) {
     console.error("Token verification error:", error.message);
 
-    return response.error(res, "Invalid or expired token", 401);
+    const message =
+      error.name === "TokenExpiredError"
+        ? "Session expired. Please log in again."
+        : "Invalid token. Please log in again.";
+
+    return response.error(res, message, 401);
   }
 };
 
